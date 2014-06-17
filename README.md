@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/japaric/rustic.svg?branch=master)](https://travis-ci.org/japaric/rustic)
+
 # rustic
 
 A `rustc` wrapper (written in rust!) than implements the `--run` flag. (This is
