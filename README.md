@@ -57,6 +57,10 @@ test test::fib_10 ... bench:       435 ns/iter (+/- 15)
 test result: ok. 0 passed; 0 failed; 1 ignored; 1 measured
 
 INFO:rustic::tmpdir: `rm -rf /tmp/rust-4TvaFz`
+
+# If the `--run` flag is absent, `rustic` behaves like `rustc`
+$ bin/rustic examples/hello.rs && ./hello && rm hello
+Hello world!
 ```
 
 ## Disclaimer
