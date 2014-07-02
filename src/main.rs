@@ -4,12 +4,12 @@
 #[phase(plugin, link)] extern crate log;
 
 use std::io::fs;
-use std::io::process::{Command,ExitSignal,ExitStatus,ProcessOutput};
+use std::io::process::{Command,ExitSignal,ExitStatus};
 use std::os;
-use std::str;
 
 use tmpdir::TmpDir;
 
+mod child;
 mod rand;
 mod tmpdir;
 
@@ -29,18 +29,21 @@ fn main() {
 
         info!("cwd: . | cmd: `{}`", cmd);
         // FIXME Replace `output` for `spawn`, and redirect child std{out,err}
-        match cmd.output() {
+        match cmd.spawn() {
             Err(e) => fail!("`{}` failed: {}", cmd, e),
-            Ok(ProcessOutput { output: out, error: err, status: exit }) => {
-                match exit {
-                    ExitSignal(exit) => os::set_exit_status(exit),
-                    ExitStatus(exit) => os::set_exit_status(exit),
-                }
+            Ok(p) => match child::supplant(p) {
+                Err(e) => fail!("`{}` failed: {}", cmd, e),
+                Ok(exit) => {
+                    if !exit.success() {
+                        let exit_code = match exit {
+                            ExitSignal(code) => code,
+                            ExitStatus(code) => code,
+                        };
 
-                print!("{}", str::from_utf8_lossy(out.as_slice()));
-                print!("{}", str::from_utf8_lossy(err.as_slice()));
-
-                return;
+                        os::set_exit_status(exit_code);
+                        return;
+                    }
+                },
             },
         }
     }
@@ -83,27 +86,27 @@ fn main() {
     cmd.args(rustc_args).arg(crate_path);
     info!("cwd: {} | cmd: `{}`", tmpdir_display, cmd);
     // FIXME Replace `output` for `spawn`, and redirect child std{out,err}
-    match cmd.cwd(tmpdir_path).output() {
-        Err(e) => fail!("`{}`: {}", cmd, e),
-        Ok(ProcessOutput { output: out, error: err, status: exit }) => {
-            let exit_code = match exit {
-                ExitSignal(code) => code,
-                ExitStatus(code) => code,
-            };
+    match cmd.cwd(tmpdir_path).spawn() {
+        Err(e) => fail!("`{}` failed: {}", cmd, e),
+        Ok(p) => match child::supplant(p) {
+            Err(e) => fail!("`{}` failed: {}", cmd, e),
+            Ok(exit) => {
+                if !exit.success() {
+                    let exit_code = match exit {
+                        ExitSignal(code) => code,
+                        ExitStatus(code) => code,
+                    };
 
-            print!("{}", str::from_utf8_lossy(out.as_slice()));
-            print!("{}", str::from_utf8_lossy(err.as_slice()));
-
-            if !exit.success() {
-                os::set_exit_status(exit_code);
-                return;
-            }
+                    os::set_exit_status(exit_code);
+                    return;
+                }
+            },
         },
     }
 
     // Look for the produced binary
     let mut cmd = match fs::readdir(tmpdir_path) {
-        Err(e) => fail!("`ls {}`: {}", tmpdir_display, e),
+        Err(e) => fail!("`ls {}` failed: {}", tmpdir_display, e),
         Ok(paths) => match paths.as_slice().get(0) {
             Some(path) => Command::new(path),
             None => fail!("no binary found in {}", tmpdir_display),
@@ -117,18 +120,21 @@ fn main() {
     // Execute
     info!("cwd: . | cmd: `{}`", cmd);
     // FIXME Replace `output` for `spawn`, and redirect child std{out,err}
-    match cmd.output() {
-        Err(e) => fail!("`{}`: {}", cmd, e),
-        Ok(ProcessOutput { output: out, error: err, status: exit }) => {
-            let exit_code = match exit {
-                ExitSignal(code) => code,
-                ExitStatus(code) => code,
-            };
+    match cmd.spawn() {
+        Err(e) => fail!("`{}` failed: {}", cmd, e),
+        Ok(p) => match child::supplant(p) {
+            Err(e) => fail!("`{}` failed: {}", cmd, e),
+            Ok(exit) => {
+                if !exit.success() {
+                    let exit_code = match exit {
+                        ExitSignal(code) => code,
+                        ExitStatus(code) => code,
+                    };
 
-            print!("{}", str::from_utf8_lossy(out.as_slice()));
-            print!("{}", str::from_utf8_lossy(err.as_slice()));
-
-            os::set_exit_status(exit_code);
+                    os::set_exit_status(exit_code);
+                    return;
+                }
+            },
         }
     }
 }
