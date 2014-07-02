@@ -8,11 +8,10 @@ pub struct TmpDir {
 
 impl TmpDir {
     pub fn new() -> TmpDir {
-        let temp = os::tmpdir();
-        let path =
-            RandomSequences::new().map(|s| temp.join(format!("rust-{}", s)))
-                                  .filter(|p| !p.exists())
-                                  .next().unwrap();
+        let tmpdir = os::tmpdir();
+        let path = RandomSequences::new().map(|seq| {
+            tmpdir.join(format!("rust-{}", seq))
+        }).filter(|path| !path.exists()).next().unwrap();
 
         info!("`mkdir {}`", path.display());
         match fs::mkdir(&path, UserDir) {

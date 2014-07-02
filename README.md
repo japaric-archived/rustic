@@ -28,8 +28,9 @@ fn main() {
 $ examples/hello.rs
 Hello world!
 
-# Use `--run` in conjunction with `--test` to run a test suite
-$ bin/rustic --run --test examples/fib.rs
+# Arguments before `--run` are passed to `rustc`
+# (the crate file path is always passed to `rustc`, regardless of its position)
+$ bin/rustic --test --run examples/fib.rs
 
 running 2 tests
 test test::fib ... ok
@@ -37,8 +38,9 @@ test test::fib_10 ... ignored
 
 test result: ok. 1 passed; 0 failed; 1 ignored; 0 measured
 
-# Guess what `--run` + `--bench` does!
-$ bin/rustic -O --bench --run examples/fib.rs
+# Arguments after `--run` are passed to the produced executable
+# (the crate file path is never passed to the executable)
+$ bin/rustic -O --test --run --bench examples/fib.rs
 
 running 2 tests
 test test::fib ... ignored
@@ -47,10 +49,11 @@ test test::fib_10 ... bench:       437 ns/iter (+/- 8)
 test result: ok. 0 passed; 0 failed; 1 ignored; 1 measured
 
 # How does it work you ask? See for yourself!
-$ RUST_LOG=rustic=info bin/rustic -O --run --bench examples/fib.rs
-INFO:rustic::tmpdir: `mkdir /tmp/rust-4TvaFz`
-INFO:rustic: cwd: /tmp/rust-4TvaFz | cmd: `rustc '-O' '--test' '/home/japaric/Projects/rustic/examples/fib.rs'`
-INFO:rustic: cwd: . | cmd: `/tmp/rust-4TvaFz/fib '--bench'`
+$ RUST_LOG=rustic=info bin/rustic -O --test --run --bench examples/fib.rs
+
+INFO:rustic::tmpdir: `mkdir /tmp/rust-ZOvsJV`
+INFO:rustic: cwd: /tmp/rust-ZOvsJV | cmd: `rustc '-O' '--test' '/home/japaric/Projects/rustic/examples/fib.rs'`
+INFO:rustic: cwd: . | cmd: `/tmp/rust-ZOvsJV/fib '--bench'`
 
 running 2 tests
 test test::fib ... ignored
@@ -58,9 +61,9 @@ test test::fib_10 ... bench:       435 ns/iter (+/- 15)
 
 test result: ok. 0 passed; 0 failed; 1 ignored; 1 measured
 
-INFO:rustic::tmpdir: `rm -rf /tmp/rust-4TvaFz`
+INFO:rustic::tmpdir: `rm -rf /tmp/rust-ZOvsJV
 
-# If the `--run` flag is absent, `rustic` behaves like `rustc`
+# If the `--run` flag is absent, `rustic` behaves just like `rustc`
 $ bin/rustic examples/hello.rs && ./hello && rm hello
 Hello world!
 ```

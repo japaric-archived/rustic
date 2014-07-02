@@ -1,11 +1,11 @@
-RUSTC = rustc -O src/main.rs
+RUSTC = rustc -O
 PREFIX = /usr/local
 
 .PHONY: all clean install
 
 all:
 	mkdir -p bin
-	$(RUSTC) --out-dir bin
+	$(RUSTC) --out-dir bin src/main.rs
 
 clean:
 	rm -rf bin
@@ -17,6 +17,6 @@ test:
 	bin/rustic -O --run examples/hello.rs
 	cat examples/hello.rs
 	examples/hello.rs
-	bin/rustic --run --test examples/fib.rs
-	bin/rustic -O --bench --run examples/fib.rs
-	RUST_LOG=rustic=info bin/rustic -O --run --bench examples/fib.rs
+	bin/rustic --test --run examples/fib.rs
+	bin/rustic examples/fib.rs -O --test --run --bench
+	RUST_LOG=rustic=info bin/rustic -O --test --run --bench examples/fib.rs
