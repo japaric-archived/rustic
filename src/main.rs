@@ -48,7 +48,14 @@ fn main() {
     // Separate the crate file from the other arguments
     let current_dir = os::getcwd();
     let crate_path = match args.iter().find(|arg| is_crate(arg.as_slice())) {
-        Some(arg) => current_dir.join(arg.as_slice()),
+        Some(arg) => {
+            let path = Path::new(arg.as_slice());
+            if path.is_absolute() {
+                path
+            } else {
+                current_dir.join(path)
+            }
+        }
         None => fail!("Didn't find a crate file in the arguments passed: {}",
                       args),
     };
