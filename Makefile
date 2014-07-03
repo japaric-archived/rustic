@@ -1,5 +1,6 @@
 RUSTC = rustc -O
-PREFIX = /usr/local
+PREFIX ?= /usr/local
+BINDIR = $(PREFIX)/bin
 
 .PHONY: all clean install
 
@@ -11,7 +12,8 @@ clean:
 	rm -rf bin
 
 install:
-	install -m 0755 bin/rustic $(DESTDIR)/$(PREFIX)/bin
+	install -d -m 0755 $(DESTDIR)/$(BINDIR)
+	install -m 0755 bin/rustic $(DESTDIR)/$(BINDIR)
 
 test:
 	bin/rustic -O --run examples/hello.rs
