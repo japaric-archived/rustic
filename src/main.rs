@@ -31,13 +31,16 @@ fn main() {
             Err(e) => fail!("`{}` failed: {}", cmd, e),
             Ok(p) => match child::supplant(p) {
                 Err(e) => fail!("`{}` failed: {}", cmd, e),
-                Ok(exit) => if !exit.success() {
-                    let exit_code = match exit {
-                        ExitSignal(code) => code,
-                        ExitStatus(code) => code,
-                    };
+                Ok(exit) => {
+                    if !exit.success() {
+                        let exit_code = match exit {
+                            ExitSignal(code) => code,
+                            ExitStatus(code) => code,
+                        };
 
-                    os::set_exit_status(exit_code);
+                        os::set_exit_status(exit_code);
+                    }
+
                     return;
                 },
             },
