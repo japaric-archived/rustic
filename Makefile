@@ -26,3 +26,6 @@ test:
 	$(RUSTIC) examples/fib.rs -O --test --run --bench
 	# How does it work you ask? See for yourself!
 	RUST_LOG=rustic=info $(RUSTIC) -O --test --run --bench examples/fib.rs
+	# If the `--run` flag is absent, `rustic` behaves just like `rustc`
+	$(RUSTIC) examples/hello.rs && ./hello && rm hello
+	Hello world!

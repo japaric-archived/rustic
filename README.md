@@ -9,28 +9,27 @@ my take on
 ## 30-second introduction
 
 ```
-# Create the `bin/rustic` binary
-$ make
+$ make && make test
 
 # Use the `--run` flag to compile+execute a rust source file
-$ bin/rustic -O --run examples/hello.rs
+target/rustic -O --run examples/hello.rs
 Hello world!
 
 # Note the shebang!
-$ cat examples/hello.rs
-#!bin/rustic --run
+cat examples/hello.rs
+#!target/rustic --run
 
 fn main() {
     println!("Hello world!");
 }
 
 # Execute a rust file!
-$ examples/hello.rs
+examples/hello.rs
 Hello world!
 
 # Arguments before `--run` are passed to `rustc`
 # (the crate file path is always passed to `rustc`, regardless of its position)
-$ bin/rustic --test --run examples/fib.rs
+target/rustic --test --run examples/fib.rs
 
 running 2 tests
 test test::fib ... ok
@@ -40,38 +39,36 @@ test result: ok. 1 passed; 0 failed; 1 ignored; 0 measured
 
 # Arguments after `--run` are passed to the produced executable
 # (the crate file path is never passed to the executable)
-$ bin/rustic -O --test --run --bench examples/fib.rs
+target/rustic examples/fib.rs -O --test --run --bench
 
 running 2 tests
 test test::fib ... ignored
-test test::fib_10 ... bench:       437 ns/iter (+/- 8)
+test test::fib_10 ... bench:       435 ns/iter (+/- 6)
 
 test result: ok. 0 passed; 0 failed; 1 ignored; 1 measured
 
 # How does it work you ask? See for yourself!
-$ RUST_LOG=rustic=info bin/rustic -O --test --run --bench examples/fib.rs
-
-INFO:rustic::tmpdir: `mkdir /tmp/rust-ZOvsJV`
-INFO:rustic: cwd: /tmp/rust-ZOvsJV | cmd: `rustc '-O' '--test' '/home/japaric/Projects/rustic/examples/fib.rs'`
-INFO:rustic: cwd: . | cmd: `/tmp/rust-ZOvsJV/fib '--bench'`
+RUST_LOG=rustic=info target/rustic -O --test --run --bench examples/fib.rs
+INFO:rustic::tmpdir: `mkdir /tmp/rust-wVElIw`
+INFO:rustic: cwd: /tmp/rust-wVElIw | cmd: `rustc '-O' '--test' '/home/japaric/Projects/rustic/examples/fib.rs'`
+INFO:rustic: cwd: . | cmd: `/tmp/rust-wVElIw/fib '--bench'`
 
 running 2 tests
 test test::fib ... ignored
-test test::fib_10 ... bench:       435 ns/iter (+/- 15)
+test test::fib_10 ... bench:       435 ns/iter (+/- 14)
 
 test result: ok. 0 passed; 0 failed; 1 ignored; 1 measured
 
-INFO:rustic::tmpdir: `rm -rf /tmp/rust-ZOvsJV
+INFO:rustic::tmpdir: `rm -rf /tmp/rust-wVElIw`
 
 # If the `--run` flag is absent, `rustic` behaves just like `rustc`
-$ bin/rustic examples/hello.rs && ./hello && rm hello
+target/rustic examples/hello.rs && ./hello && rm hello
 Hello world!
 ```
 
 ## Disclaimer
 
-Use at your own risk! I just hacked this up, so expect to find bugs. Please
-file an issue if you do.
+Use at your own risk! And please file an issue if you find any bug.
 
 ## License
 
