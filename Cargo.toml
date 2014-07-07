@@ -1,0 +1,8 @@
+[package]
+name = "rustic"
+version = "0.0.0"
+authors = ["Jorge Aparicio <japaric@linux.com>"]
+
+[[bin]]
+name = "rustic"
+path = "src/main.rs"
