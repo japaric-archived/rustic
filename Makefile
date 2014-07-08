@@ -5,7 +5,7 @@ BINDIR = $(PREFIX)/bin
 .PHONY: all clean install
 
 all:
-	cargo build || mkdir -p target && rustc -O src/main.rs --out-dir target
+	carg build --release || mkdir -p target && rustc -O src/main.rs --out-dir target && mv target/main target/rustic
 
 install:
 	install -d -m 0755 $(DESTDIR)/$(BINDIR)

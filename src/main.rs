@@ -1,4 +1,3 @@
-#![crate_name = "rustic"]
 #![feature(phase)]
 
 #[phase(plugin, link)] extern crate log;
