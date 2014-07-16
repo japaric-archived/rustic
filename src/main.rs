@@ -4,12 +4,10 @@
 extern crate tmpdir;
 
 use std::io::fs;
-use std::io::process::{Command,ExitSignal,ExitStatus};
+use std::io::process::{Command,ExitSignal,ExitStatus,InheritFd,ProcessOutput};
 use std::os;
 
 use tmpdir::TmpDir;
-
-mod child;
 
 fn is_crate(arg: &str) -> bool {
     Path::new(arg).exists()
@@ -23,24 +21,21 @@ fn main() {
     if args.iter().all(|arg| arg.as_slice() != "--run") {
         let mut cmd = Command::new("rustc");
         cmd.args(args);
+        cmd.stdout(InheritFd(1));
+        cmd.stderr(InheritFd(2));
 
         info!("cwd: . | cmd: `{}`", cmd);
-        match cmd.spawn() {
+        match cmd.output() {
             Err(e) => fail!("`{}` failed: {}", cmd, e),
-            Ok(p) => match child::supplant(p) {
-                Err(e) => fail!("`{}` failed: {}", cmd, e),
-                Ok(exit) => {
-                    if !exit.success() {
-                        let exit_code = match exit {
-                            ExitSignal(code) => code,
-                            ExitStatus(code) => code,
-                        };
+            Ok(ProcessOutput { status: exit, .. }) =>  {
+                let exit_code = match exit {
+                    ExitSignal(code) => code,
+                    ExitStatus(code) => code,
+                };
 
-                        os::set_exit_status(exit_code);
-                    }
+                os::set_exit_status(exit_code);
 
-                    return;
-                },
+                return;
             },
         }
     }
@@ -82,6 +77,8 @@ fn main() {
         cmd.arg(arg.as_slice());
     }
     cmd.arg(crate_path);
+    cmd.stdout(InheritFd(1));
+    cmd.stderr(InheritFd(2));
 
     // Create temporary directory
     let tmpdir = TmpDir::new("rust");
@@ -90,19 +87,16 @@ fn main() {
 
     // Compile
     info!("cwd: {} | cmd: `{}`", tmpdir_display, cmd);
-    match cmd.cwd(tmpdir_path).spawn() {
+    match cmd.cwd(tmpdir_path).output() {
         Err(e) => fail!("`{}` failed: {}", cmd, e),
-        Ok(p) => match child::supplant(p) {
-            Err(e) => fail!("`{}` failed: {}", cmd, e),
-            Ok(exit) => if !exit.success() {
-                let exit_code = match exit {
-                    ExitSignal(code) => code,
-                    ExitStatus(code) => code,
-                };
+        Ok(ProcessOutput { status: exit, .. }) => if !exit.success() {
+            let exit_code = match exit {
+                ExitSignal(code) => code,
+                ExitStatus(code) => code,
+            };
 
-                os::set_exit_status(exit_code);
-                return;
-            },
+            os::set_exit_status(exit_code);
+            return;
         },
     }
 
@@ -119,22 +113,21 @@ fn main() {
     for arg in executable_args.iter().filter(|&arg| arg != crate_arg) {
         cmd.arg(arg.as_slice());
     }
+    cmd.stdout(InheritFd(1));
+    cmd.stderr(InheritFd(2));
 
     // Execute
     info!("cwd: . | cmd: `{}`", cmd);
-    match cmd.spawn() {
+    match cmd.output() {
         Err(e) => fail!("`{}` failed: {}", cmd, e),
-        Ok(p) => match child::supplant(p) {
-            Err(e) => fail!("`{}` failed: {}", cmd, e),
-            Ok(exit) => if !exit.success() {
-                let exit_code = match exit {
-                    ExitSignal(code) => code,
-                    ExitStatus(code) => code,
-                };
+        Ok(ProcessOutput { status: exit, .. }) => if !exit.success() {
+            let exit_code = match exit {
+                ExitSignal(code) => code,
+                ExitStatus(code) => code,
+            };
 
-                os::set_exit_status(exit_code);
-                return;
-            },
-        }
+            os::set_exit_status(exit_code);
+            return;
+        },
     }
 }
