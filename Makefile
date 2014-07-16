@@ -1,11 +1,14 @@
-RUSTIC = target/rustic
+RUSTIC = target/release/rustic
 PREFIX ?= /usr/local
 BINDIR = $(PREFIX)/bin
 
 .PHONY: all clean install
 
 all:
-	carg build --release || mkdir -p target && rustc -O src/main.rs --out-dir target && mv target/main target/rustic
+	cargo build --release
+	# FIXME rust-lang/cargo#207
+	rm target/release/main
+	rustc -O -L target/release/deps src/main.rs --out-dir target/release --crate-name rustic
 
 install:
 	install -d -m 0755 $(DESTDIR)/$(BINDIR)

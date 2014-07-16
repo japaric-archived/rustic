@@ -1,6 +1,7 @@
 #![feature(phase)]
 
 #[phase(plugin, link)] extern crate log;
+extern crate tmpdir;
 
 use std::io::fs;
 use std::io::process::{Command,ExitSignal,ExitStatus};
@@ -9,8 +10,6 @@ use std::os;
 use tmpdir::TmpDir;
 
 mod child;
-mod rand;
-mod tmpdir;
 
 fn is_crate(arg: &str) -> bool {
     Path::new(arg).exists()
@@ -85,7 +84,7 @@ fn main() {
     cmd.arg(crate_path);
 
     // Create temporary directory
-    let tmpdir = TmpDir::new();
+    let tmpdir = TmpDir::new("rust");
     let tmpdir_path = tmpdir.path();
     let tmpdir_display = tmpdir_path.display();
 

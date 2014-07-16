@@ -1,4 +1,7 @@
 [package]
+authors = ["Jorge Aparicio <japaric@linux.com>"]
 name = "rustic"
 version = "0.0.0"
-authors = ["Jorge Aparicio <japaric@linux.com>"]
+
+[dependencies.tmpdir]
+git = "https://github.com/japaric/tmpdir.rs"
