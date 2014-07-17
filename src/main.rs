@@ -113,6 +113,7 @@ fn main() {
     for arg in executable_args.iter().filter(|&arg| arg != crate_arg) {
         cmd.arg(arg.as_slice());
     }
+    cmd.stdin(InheritFd(0));
     cmd.stdout(InheritFd(1));
     cmd.stderr(InheritFd(2));
 
