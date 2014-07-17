@@ -2,17 +2,13 @@ RUSTIC = target/release/rustic
 PREFIX ?= /usr/local
 BINDIR = $(PREFIX)/bin
 
-.PHONY: all clean install
+.PHONY: all test
 
 all:
 	cargo build --release
 	# FIXME rust-lang/cargo#207
 	rm target/release/main
 	rustc -O -L target/release/deps src/main.rs --out-dir target/release --crate-name rustic
-
-install:
-	install -d -m 0755 $(DESTDIR)/$(BINDIR)
-	install -m 0755 bin/rustic $(DESTDIR)/$(BINDIR)
 
 test:
 	# Use the `--run` flag to compile+execute a rust source file
