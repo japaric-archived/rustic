@@ -6,9 +6,6 @@ BINDIR = $(PREFIX)/bin
 
 all:
 	cargo build --release
-	# FIXME rust-lang/cargo#207
-	rm target/release/main
-	rustc -O -L target/release/deps src/main.rs --out-dir target/release --crate-name rustic
 
 test:
 	# Use the `--run` flag to compile+execute a rust source file
