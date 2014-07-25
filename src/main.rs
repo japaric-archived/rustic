@@ -1,13 +1,11 @@
 #![feature(phase)]
 
 #[phase(plugin, link)] extern crate log;
-extern crate tmpdir;
 
+use std::io::TempDir;
 use std::io::fs;
 use std::io::process::{Command,ExitSignal,ExitStatus,InheritFd,ProcessOutput};
 use std::os;
-
-use tmpdir::TmpDir;
 
 fn is_crate(arg: &str) -> bool {
     Path::new(arg).exists()
@@ -81,13 +79,13 @@ fn main() {
     cmd.stderr(InheritFd(2));
 
     // Create temporary directory
-    let tmpdir = TmpDir::new("rust");
-    let tmpdir_path = tmpdir.path();
-    let tmpdir_display = tmpdir_path.display();
+    let temp_dir = TempDir::new("rust").unwrap();
+    let temp_dir_path = temp_dir.path();
+    let temp_dir_display = temp_dir_path.display();
 
     // Compile
-    info!("cwd: {} | cmd: `{}`", tmpdir_display, cmd);
-    match cmd.cwd(tmpdir_path).output() {
+    info!("cwd: {} | cmd: `{}`", temp_dir_display, cmd);
+    match cmd.cwd(temp_dir_path).output() {
         Err(e) => fail!("`{}` failed: {}", cmd, e),
         Ok(ProcessOutput { status: exit, .. }) => if !exit.success() {
             let exit_code = match exit {
@@ -101,11 +99,11 @@ fn main() {
     }
 
     // Look for the produced binary
-    let mut cmd = match fs::readdir(tmpdir_path) {
-        Err(e) => fail!("`ls {}` failed: {}", tmpdir_display, e),
+    let mut cmd = match fs::readdir(temp_dir_path) {
+        Err(e) => fail!("`ls {}` failed: {}", temp_dir_display, e),
         Ok(paths) => match paths.as_slice().get(0) {
             Some(path) => Command::new(path),
-            None => fail!("no binary found in {}", tmpdir_display),
+            None => fail!("no binary found in {}", temp_dir_display),
         }
     };
 
