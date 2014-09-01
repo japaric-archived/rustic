@@ -9,18 +9,16 @@ all:
 
 test:
 	# Use the `--run` flag to compile+execute a rust source file
-	$(RUSTIC) -O --run examples/hello.rs
+	$(RUSTIC) -O examples/hello.rs --run
 	# Note the shebang!
 	cat examples/hello.rs
 	# Execute a rust file!
 	examples/hello.rs
-	# Arguments before `--run` are passed to `rustc`
-	# (the crate file path is always passed to `rustc`, regardless of its position)
-	$(RUSTIC) --test --run examples/fib.rs
-	# Arguments after `--run` are passed to the produced executable
-	# (the crate file path is never passed to the executable)
-	$(RUSTIC) examples/fib.rs -O --test --run --bench
+	# Run your test suite
+	$(RUSTIC) examples/fib.rs --run --test
+	# Arguments after the `--` are passed to the produced executable
+	$(RUSTIC) -O examples/fib.rs --run --test -- --bench
 	# How does it work you ask? See for yourself!
-	RUST_LOG=rustic=info $(RUSTIC) -O --test --run --bench examples/fib.rs
+	RUST_LOG=rustic=info $(RUSTIC) -O examples/fib.rs --run --test -- --bench
 	# If the `--run` flag is absent, `rustic` behaves just like `rustc`
 	$(RUSTIC) examples/hello.rs && ./hello && rm hello
