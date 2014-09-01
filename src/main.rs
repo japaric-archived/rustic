@@ -8,10 +8,6 @@ use std::io::fs;
 use std::io::process::{Command, ExitSignal, ExitStatus, InheritFd, ProcessOutput};
 use std::os;
 
-fn is_crate(arg: &str) -> bool {
-    Path::new(arg).exists() && arg.ends_with(".rs")
-}
-
 fn main() {
     let args = os::args();
     let args = args.slice_from(1);
@@ -39,43 +35,30 @@ fn main() {
         }
     }
 
-    // Before `--run`: arguments for the compiler
-    let mut splitted_args = args.split(|arg| arg.as_slice() == "--run");
-    let rustc_args = splitted_args.next().unwrap();
-    let executable_args = splitted_args.next().unwrap();
+    // Before `--`: arguments for the compiler
+    // After `--`: arguments for the executable
+    let mut splitted_args = args.split(|arg| arg.as_slice() == "--");
+    let compiler_args = splitted_args.next().unwrap();
+    let executable_args = splitted_args.next();
 
     // TODO `--crate-type=lib` should also be forbidden
     // XXX What if the crate has a `crate_type=*lib` attribute?
-    if rustc_args.iter().any(|arg| arg.as_slice() == "--out-dir") {
+    if compiler_args.iter().any(|arg| arg.as_slice() == "--out-dir") {
         fail!("Can't use both `--out-dir` and `--run` flags at the same time");
     }
 
-    // Separate the crate file from the other arguments
-    let crate_arg = match args.iter().find(|arg| {
-        is_crate(arg.as_slice())
-    }) {
-        Some(arg) => arg,
-        None => fail!("Didn't find a crate file in the arguments passed"),
-    };
-
-    // Use full path for the crate file
-    let current_dir = os::getcwd();
-    let crate_path = {
-        let path = Path::new(crate_arg.as_slice());
-
-        if path.is_absolute() {
-            path
-        } else {
-            current_dir.join(path)
-        }
-    };
-
     // Build the rustc command
     let mut cmd = Command::new("rustc");
-    for arg in rustc_args.iter().filter(|&arg| arg != crate_arg) {
-        cmd.arg(arg.as_slice());
+    // Make all paths absolute, filter out the `--run` flag
+    let current_dir = os::getcwd();
+    for arg in compiler_args.iter().map(|arg| arg.as_slice()).filter(|&arg| arg != "--run") {
+        let path = Path::new(arg);
+        if path.exists() && path.is_relative() {
+            cmd.arg(current_dir.join(path));
+        } else {
+            cmd.arg(arg);
+        }
     }
-    cmd.arg(crate_path);
     cmd.stdout(InheritFd(1));
     cmd.stderr(InheritFd(2));
 
@@ -109,8 +92,11 @@ fn main() {
     };
 
     // Build the executable command
-    for arg in executable_args.iter().filter(|&arg| arg != crate_arg) {
-        cmd.arg(arg.as_slice());
+    match executable_args {
+        None => {},
+        Some(args) => {
+            cmd.args(args);
+        },
     }
     cmd.stdin(InheritFd(0));
     cmd.stdout(InheritFd(1));
