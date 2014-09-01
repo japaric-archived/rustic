@@ -1,14 +1,15 @@
 #![feature(phase)]
 
-#[phase(plugin, link)] extern crate log;
+#[phase(plugin, link)]
+extern crate log;
 
 use std::io::TempDir;
 use std::io::fs;
-use std::io::process::{Command,ExitSignal,ExitStatus,InheritFd,ProcessOutput};
+use std::io::process::{Command, ExitSignal, ExitStatus, InheritFd, ProcessOutput};
 use std::os;
 
 fn is_crate(arg: &str) -> bool {
-    Path::new(arg).exists()
+    Path::new(arg).exists() && arg.ends_with(".rs")
 }
 
 fn main() {
