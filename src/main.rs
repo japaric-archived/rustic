@@ -4,7 +4,7 @@
 extern crate log;
 
 use std::io::TempDir;
-use std::io::fs;
+use std::io::fs::{PathExtensions, mod};
 use std::io::process::{Command, ExitSignal, ExitStatus, InheritFd, ProcessOutput};
 use std::os;
 
