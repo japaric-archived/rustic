@@ -1,3 +1,4 @@
+#![deny(warnings)]
 #![feature(phase)]
 
 #[phase(plugin, link)]
