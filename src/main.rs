@@ -22,7 +22,7 @@ fn main() {
 
         info!("cwd: . | cmd: `{}`", cmd);
         match cmd.output() {
-            Err(e) => fail!("`{}` failed: {}", cmd, e),
+            Err(e) => panic!("`{}` failed: {}", cmd, e),
             Ok(ProcessOutput { status: exit, .. }) =>  {
                 let exit_code = match exit {
                     ExitSignal(code) => code,
@@ -45,7 +45,7 @@ fn main() {
     // TODO `--crate-type=lib` should also be forbidden
     // XXX What if the crate has a `crate_type=*lib` attribute?
     if compiler_args.iter().any(|arg| arg.as_slice() == "--out-dir") {
-        fail!("Can't use both `--out-dir` and `--run` flags at the same time");
+        panic!("Can't use both `--out-dir` and `--run` flags at the same time");
     }
 
     // Build the rustc command
@@ -71,7 +71,7 @@ fn main() {
     // Compile
     info!("cwd: {} | cmd: `{}`", temp_dir_display, cmd);
     match cmd.cwd(temp_dir_path).output() {
-        Err(e) => fail!("`{}` failed: {}", cmd, e),
+        Err(e) => panic!("`{}` failed: {}", cmd, e),
         Ok(ProcessOutput { status: exit, .. }) => if !exit.success() {
             let exit_code = match exit {
                 ExitSignal(code) => code,
@@ -85,10 +85,10 @@ fn main() {
 
     // Look for the produced binary
     let mut cmd = match fs::readdir(temp_dir_path) {
-        Err(e) => fail!("`ls {}` failed: {}", temp_dir_display, e),
+        Err(e) => panic!("`ls {}` failed: {}", temp_dir_display, e),
         Ok(paths) => match paths.as_slice().get(0) {
             Some(path) => Command::new(path),
-            None => fail!("no binary found in {}", temp_dir_display),
+            None => panic!("no binary found in {}", temp_dir_display),
         }
     };
 
@@ -106,7 +106,7 @@ fn main() {
     // Execute
     info!("cwd: . | cmd: `{}`", cmd);
     match cmd.output() {
-        Err(e) => fail!("`{}` failed: {}", cmd, e),
+        Err(e) => panic!("`{}` failed: {}", cmd, e),
         Ok(ProcessOutput { status: exit, .. }) => if !exit.success() {
             let exit_code = match exit {
                 ExitSignal(code) => code,
