@@ -51,7 +51,7 @@ fn main() {
     // Build the rustc command
     let mut cmd = Command::new("rustc");
     // Make all paths absolute, filter out the `--run` flag
-    let current_dir = os::getcwd();
+    let current_dir = os::getcwd().ok().expect("Couldn't fetch the current directory");
     for arg in compiler_args.iter().map(|arg| arg.as_slice()).filter(|&arg| arg != "--run") {
         let path = Path::new(arg);
         if path.exists() && path.is_relative() {
