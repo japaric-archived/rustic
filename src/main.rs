@@ -1,11 +1,10 @@
 #![deny(warnings)]
-#![feature(phase)]
 
-#[phase(plugin, link)]
+#[macro_use]
 extern crate log;
 
 use std::io::TempDir;
-use std::io::fs::{PathExtensions, mod};
+use std::io::fs::{PathExtensions, self};
 use std::io::process::{Command, ExitSignal, ExitStatus, InheritFd, ProcessOutput};
 use std::os;
 
