@@ -1,3 +1,4 @@
+#![allow(unstable)]
 #![deny(warnings)]
 
 #[macro_use]

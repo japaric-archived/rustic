@@ -1,4 +1,6 @@
-fn fibonacci(n: uint) -> uint {
+#![allow(unstable)]
+
+fn fibonacci(n: i32) -> i32 {
     match n {
         0 => 0,
         1 => 1,
