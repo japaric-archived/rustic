@@ -11,7 +11,7 @@ use std::os;
 
 fn main() {
     let args = os::args();
-    let args = args.slice_from(1);
+    let args = args.tail();
 
     // If `--run` is not in the arguments: pass all the arguments to `rustc`
     if args.iter().all(|arg| arg.as_slice() != "--run") {
@@ -20,9 +20,9 @@ fn main() {
         cmd.stdout(InheritFd(1));
         cmd.stderr(InheritFd(2));
 
-        info!("cwd: . | cmd: `{}`", cmd);
+        info!("cwd: . | cmd: `{:?}`", cmd);
         match cmd.output() {
-            Err(e) => panic!("`{}` failed: {}", cmd, e),
+            Err(e) => panic!("`{:?}` failed: {}", cmd, e),
             Ok(ProcessOutput { status: exit, .. }) =>  {
                 let exit_code = match exit {
                     ExitSignal(code) => code,
@@ -69,9 +69,9 @@ fn main() {
     let temp_dir_display = temp_dir_path.display();
 
     // Compile
-    info!("cwd: {} | cmd: `{}`", temp_dir_display, cmd);
+    info!("cwd: {} | cmd: `{:?}`", temp_dir_display, cmd);
     match cmd.cwd(temp_dir_path).output() {
-        Err(e) => panic!("`{}` failed: {}", cmd, e),
+        Err(e) => panic!("`{:?}` failed: {}", cmd, e),
         Ok(ProcessOutput { status: exit, .. }) => if !exit.success() {
             let exit_code = match exit {
                 ExitSignal(code) => code,
@@ -104,9 +104,9 @@ fn main() {
     cmd.stderr(InheritFd(2));
 
     // Execute
-    info!("cwd: . | cmd: `{}`", cmd);
+    info!("cwd: . | cmd: `{:?}`", cmd);
     match cmd.output() {
-        Err(e) => panic!("`{}` failed: {}", cmd, e),
+        Err(e) => panic!("`{:?}` failed: {}", cmd, e),
         Ok(ProcessOutput { status: exit, .. }) => if !exit.success() {
             let exit_code = match exit {
                 ExitSignal(code) => code,
