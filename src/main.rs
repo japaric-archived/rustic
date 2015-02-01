@@ -1,12 +1,16 @@
-#![allow(unstable)]
 #![deny(warnings)]
+#![feature(collections)]
+#![feature(core)]
+#![feature(io)]
+#![feature(os)]
+#![feature(path)]
 
 #[macro_use]
 extern crate log;
 
-use std::io::TempDir;
-use std::io::fs::{PathExtensions, self};
-use std::io::process::{Command, ExitSignal, ExitStatus, InheritFd, ProcessOutput};
+use std::old_io::TempDir;
+use std::old_io::fs::{PathExtensions, self};
+use std::old_io::process::{Command, ExitSignal, ExitStatus, InheritFd, ProcessOutput};
 use std::os;
 
 fn main() {
