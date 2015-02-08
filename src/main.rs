@@ -1,6 +1,6 @@
 #![deny(warnings)]
-#![feature(collections)]
 #![feature(core)]
+#![feature(env)]
 #![feature(io)]
 #![feature(os)]
 #![feature(path)]
@@ -11,16 +11,15 @@ extern crate log;
 use std::old_io::TempDir;
 use std::old_io::fs::{PathExtensions, self};
 use std::old_io::process::{Command, ExitSignal, ExitStatus, InheritFd, ProcessOutput};
-use std::os;
+use std::env;
 
 fn main() {
-    let args = os::args();
-    let args = args.tail();
+    let args: Vec<_> = env::args().skip(1).map(|a| a.into_string().unwrap()).collect();
 
     // If `--run` is not in the arguments: pass all the arguments to `rustc`
     if args.iter().all(|arg| arg.as_slice() != "--run") {
         let mut cmd = Command::new("rustc");
-        cmd.args(args);
+        cmd.args(&args);
         cmd.stdout(InheritFd(1));
         cmd.stderr(InheritFd(2));
 
@@ -33,7 +32,7 @@ fn main() {
                     ExitStatus(code) => code,
                 };
 
-                os::set_exit_status(exit_code);
+                env::set_exit_status(exit_code as i32);
 
                 return;
             },
@@ -55,7 +54,7 @@ fn main() {
     // Build the rustc command
     let mut cmd = Command::new("rustc");
     // Make all paths absolute, filter out the `--run` flag
-    let current_dir = os::getcwd().ok().expect("Couldn't fetch the current directory");
+    let current_dir = env::current_dir().ok().expect("Couldn't fetch the current directory");
     for arg in compiler_args.iter().map(|arg| arg.as_slice()).filter(|&arg| arg != "--run") {
         let path = Path::new(arg);
         if path.exists() && path.is_relative() {
@@ -82,7 +81,7 @@ fn main() {
                 ExitStatus(code) => code,
             };
 
-            os::set_exit_status(exit_code);
+            env::set_exit_status(exit_code as i32);
             return;
         },
     }
@@ -117,7 +116,7 @@ fn main() {
                 ExitStatus(code) => code,
             };
 
-            os::set_exit_status(exit_code);
+            env::set_exit_status(exit_code as i32);
             return;
         },
     }
