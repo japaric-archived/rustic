@@ -2,7 +2,6 @@
 #![feature(core)]
 #![feature(env)]
 #![feature(io)]
-#![feature(os)]
 #![feature(path)]
 
 #[macro_use]
@@ -14,7 +13,7 @@ use std::old_io::process::{Command, ExitSignal, ExitStatus, InheritFd, ProcessOu
 use std::env;
 
 fn main() {
-    let args: Vec<_> = env::args().skip(1).map(|a| a.into_string().unwrap()).collect();
+    let args: Vec<_> = env::args().skip(1).collect();
 
     // If `--run` is not in the arguments: pass all the arguments to `rustc`
     if args.iter().all(|arg| arg.as_slice() != "--run") {
