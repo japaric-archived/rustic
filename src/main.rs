@@ -1,8 +1,8 @@
 #![deny(warnings)]
 #![feature(core)]
 #![feature(env)]
-#![feature(io)]
-#![feature(path)]
+#![feature(old_io)]
+#![feature(old_path)]
 
 #[macro_use]
 extern crate log;
