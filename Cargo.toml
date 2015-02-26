@@ -5,3 +5,6 @@ version = "0.0.0"
 
 [dependencies.log]
 git = "https://github.com/rust-lang/log"
+
+[dependencies.env_logger]
+git = "https://github.com/rust-lang/log"

@@ -1,37 +1,39 @@
 #![deny(warnings)]
-#![feature(core)]
 #![feature(env)]
-#![feature(old_io)]
-#![feature(old_path)]
+#![feature(fs)]
+#![feature(path)]
+#![feature(process)]
+#![feature(tempdir)]
 
 #[macro_use]
 extern crate log;
+extern crate env_logger;
 
-use std::old_io::TempDir;
-use std::old_io::fs::{PathExtensions, self};
-use std::old_io::process::{Command, ExitSignal, ExitStatus, InheritFd, ProcessOutput};
 use std::env;
+use std::fs::{PathExt, TempDir, self};
+use std::path::Path;
+use std::process::{Command, Stdio};
 
 fn main() {
+    env_logger::init().unwrap();
+
     let args: Vec<_> = env::args().skip(1).collect();
 
     // If `--run` is not in the arguments: pass all the arguments to `rustc`
-    if args.iter().all(|arg| arg.as_slice() != "--run") {
+    if args.iter().all(|arg| *arg != "--run") {
         let mut cmd = Command::new("rustc");
         cmd.args(&args);
-        cmd.stdout(InheritFd(1));
-        cmd.stderr(InheritFd(2));
+
+        // Inherit stdio
+        cmd.stderr(Stdio::inherit());
+        cmd.stdin(Stdio::inherit());
+        cmd.stdout(Stdio::inherit());
 
         info!("cwd: . | cmd: `{:?}`", cmd);
         match cmd.output() {
             Err(e) => panic!("`{:?}` failed: {}", cmd, e),
-            Ok(ProcessOutput { status: exit, .. }) =>  {
-                let exit_code = match exit {
-                    ExitSignal(code) => code,
-                    ExitStatus(code) => code,
-                };
-
-                env::set_exit_status(exit_code as i32);
+            Ok(output) =>  {
+                env::set_exit_status(output.status.code().unwrap());
 
                 return;
             },
@@ -40,13 +42,13 @@ fn main() {
 
     // Before `--`: arguments for the compiler
     // After `--`: arguments for the executable
-    let mut splitted_args = args.split(|arg| arg.as_slice() == "--");
+    let mut splitted_args = args.split(|arg| *arg == "--");
     let compiler_args = splitted_args.next().unwrap();
     let executable_args = splitted_args.next();
 
     // TODO `--crate-type=lib` should also be forbidden
     // XXX What if the crate has a `crate_type=*lib` attribute?
-    if compiler_args.iter().any(|arg| arg.as_slice() == "--out-dir") {
+    if compiler_args.iter().any(|arg| *arg == "--out-dir") {
         panic!("Can't use both `--out-dir` and `--run` flags at the same time");
     }
 
@@ -54,43 +56,43 @@ fn main() {
     let mut cmd = Command::new("rustc");
     // Make all paths absolute, filter out the `--run` flag
     let current_dir = env::current_dir().ok().expect("Couldn't fetch the current directory");
-    for arg in compiler_args.iter().map(|arg| arg.as_slice()).filter(|&arg| arg != "--run") {
+    for arg in compiler_args.iter().filter(|arg| **arg != "--run") {
         let path = Path::new(arg);
+
         if path.exists() && path.is_relative() {
-            cmd.arg(current_dir.join(path));
+            cmd.arg(&current_dir.join(path));
         } else {
             cmd.arg(arg);
         }
     }
-    cmd.stdout(InheritFd(1));
-    cmd.stderr(InheritFd(2));
 
     // Create temporary directory
     let temp_dir = TempDir::new("rust").unwrap();
     let temp_dir_path = temp_dir.path();
     let temp_dir_display = temp_dir_path.display();
 
+    // Inherit stdio
+    cmd.stderr(Stdio::inherit());
+    cmd.stdin(Stdio::inherit());
+    cmd.stdout(Stdio::inherit());
+
     // Compile
     info!("cwd: {} | cmd: `{:?}`", temp_dir_display, cmd);
-    match cmd.cwd(temp_dir_path).output() {
+    match cmd.current_dir(temp_dir_path).output() {
         Err(e) => panic!("`{:?}` failed: {}", cmd, e),
-        Ok(ProcessOutput { status: exit, .. }) => if !exit.success() {
-            let exit_code = match exit {
-                ExitSignal(code) => code,
-                ExitStatus(code) => code,
-            };
+        Ok(output) => if !output.status.success() {
+            env::set_exit_status(output.status.code().unwrap());
 
-            env::set_exit_status(exit_code as i32);
             return;
         },
     }
 
     // Look for the produced binary
-    let mut cmd = match fs::readdir(temp_dir_path) {
+    let mut cmd = match fs::read_dir(temp_dir_path) {
         Err(e) => panic!("`ls {}` failed: {}", temp_dir_display, e),
-        Ok(paths) => match paths.as_slice().get(0) {
-            Some(path) => Command::new(path),
-            None => panic!("no binary found in {}", temp_dir_display),
+        Ok(mut paths) => match paths.next() {
+            Some(Ok(entry)) => Command::new(&entry.path()),
+            _ => panic!("no binary found in {}", temp_dir_display),
         }
     };
 
@@ -101,21 +103,20 @@ fn main() {
             cmd.args(args);
         },
     }
-    cmd.stdin(InheritFd(0));
-    cmd.stdout(InheritFd(1));
-    cmd.stderr(InheritFd(2));
+
+    // Inherit stdio
+    cmd.stderr(Stdio::inherit());
+    cmd.stdin(Stdio::inherit());
+    cmd.stdout(Stdio::inherit());
 
     // Execute
     info!("cwd: . | cmd: `{:?}`", cmd);
     match cmd.output() {
         Err(e) => panic!("`{:?}` failed: {}", cmd, e),
-        Ok(ProcessOutput { status: exit, .. }) => if !exit.success() {
-            let exit_code = match exit {
-                ExitSignal(code) => code,
-                ExitStatus(code) => code,
-            };
+        Ok(output) => if !output.status.success() {
 
-            env::set_exit_status(exit_code as i32);
+            env::set_exit_status(output.status.code().unwrap());
+
             return;
         },
     }
