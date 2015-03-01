@@ -1,5 +1,5 @@
 #![deny(warnings)]
-#![feature(env)]
+#![feature(exit_status)]
 #![feature(fs)]
 #![feature(path)]
 #![feature(process)]
