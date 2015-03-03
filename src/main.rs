@@ -2,7 +2,6 @@
 #![feature(exit_status)]
 #![feature(fs)]
 #![feature(path)]
-#![feature(process)]
 #![feature(tempdir)]
 
 #[macro_use]
