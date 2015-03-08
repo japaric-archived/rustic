@@ -1,17 +1,19 @@
 #![deny(warnings)]
 #![feature(exit_status)]
-#![feature(fs)]
 #![feature(path)]
-#![feature(tempdir)]
+#![feature(path_ext)]
 
+extern crate env_logger;
 #[macro_use]
 extern crate log;
-extern crate env_logger;
+extern crate tempdir;
 
 use std::env;
-use std::fs::{PathExt, TempDir, self};
+use std::fs::{PathExt, self};
 use std::path::Path;
 use std::process::{Command, Stdio};
+
+use tempdir::TempDir;
 
 fn main() {
     env_logger::init().unwrap();
@@ -68,7 +70,6 @@ fn main() {
     // Create temporary directory
     let temp_dir = TempDir::new("rust").unwrap();
     let temp_dir_path = temp_dir.path();
-    let temp_dir_display = temp_dir_path.display();
 
     // Inherit stdio
     cmd.stderr(Stdio::inherit());
@@ -76,7 +77,7 @@ fn main() {
     cmd.stdout(Stdio::inherit());
 
     // Compile
-    info!("cwd: {} | cmd: `{:?}`", temp_dir_display, cmd);
+    info!("cwd: {:?} | cmd: `{:?}`", temp_dir_path, cmd);
     match cmd.current_dir(temp_dir_path).output() {
         Err(e) => panic!("`{:?}` failed: {}", cmd, e),
         Ok(output) => if !output.status.success() {
@@ -88,10 +89,10 @@ fn main() {
 
     // Look for the produced binary
     let mut cmd = match fs::read_dir(temp_dir_path) {
-        Err(e) => panic!("`ls {}` failed: {}", temp_dir_display, e),
+        Err(e) => panic!("`ls {:?}` failed: {}", temp_dir_path, e),
         Ok(mut paths) => match paths.next() {
             Some(Ok(entry)) => Command::new(&entry.path()),
-            _ => panic!("no binary found in {}", temp_dir_display),
+            _ => panic!("no binary found in {:?}", temp_dir_path),
         }
     };
 

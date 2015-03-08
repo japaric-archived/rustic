@@ -3,8 +3,11 @@ authors = ["Jorge Aparicio <japaricious@gmail.com>"]
 name = "rustic"
 version = "0.0.0"
 
+[dependencies.env_logger]
+git = "https://github.com/rust-lang/log"
+
 [dependencies.log]
 git = "https://github.com/rust-lang/log"
 
-[dependencies.env_logger]
-git = "https://github.com/rust-lang/log"
+[dependencies.tempdir]
+git = "https://github.com/rust-lang/tempdir"
