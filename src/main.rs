@@ -1,6 +1,5 @@
 #![deny(warnings)]
 #![feature(exit_status)]
-#![feature(path)]
 #![feature(path_ext)]
 
 extern crate env_logger;
