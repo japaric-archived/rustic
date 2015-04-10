@@ -3,11 +3,10 @@ authors = ["Jorge Aparicio <japaricious@gmail.com>"]
 name = "rustic"
 version = "0.0.0"
 
-[dependencies.env_logger]
-git = "https://github.com/rust-lang/log"
+[dependencies]
+debug_unreachable = "*"
+env_logger = "*"
+log = "*"
 
-[dependencies.log]
-git = "https://github.com/rust-lang/log"
-
-[dependencies.tempdir]
-git = "https://github.com/rust-lang/tempdir"
+[dependencies.lines]
+git = "https://github.com/japaric/lines.rs"

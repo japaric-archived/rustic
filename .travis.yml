@@ -2,8 +2,9 @@ language: rust
 sudo: false
 
 script:
-  - make
-  - make test
+  - cargo build
+  - ./test.sh
+  - ./check-line-length.sh
 
 branches:
   only: master

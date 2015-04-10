@@ -1,61 +1,153 @@
 [![Build Status][travis]](https://travis-ci.org/japaric/rustic)
 
-# rustic
+# `rustic`
 
-A `rustc` wrapper (written in rust!) than implements the `--run` flag. (This is
-my take on [rust-lang/rust#9826][issue])
+Rustic scripts (`#!/usr/bin/rustic`) with access to the Cargo ecosystem
 
-## 30-second introduction
+## One-minute Introduction
+
+`rustic` is a `cargo` wrapper that lets you run rust source files!
 
 ```
-$ make && make test
+$ cat hello.rs
+fn main() {
+    println!("Hello, world!");
+}
 
-# Use the `--run` flag to compile+execute a rust source file
-target/release/rustic -O examples/hello.rs --run
-Hello world!
-# Note the shebang!
-cat examples/hello.rs
-#!target/release/rustic --run
+$ rustic hello.rs
+Hello, world!
+```
+
+Shebangs also work!
+
+```
+$ cat script.rs
+#!/usr/bin/rustic
 
 fn main() {
-    println!("Hello world!");
+    println!("This is a rust script!");
 }
-# Execute a rust file!
-examples/hello.rs
-Hello world!
-# Run your test suite
-target/release/rustic examples/fib.rs --run --test
 
-running 2 tests
-test test::fib ... ok
-test test::fib_10 ... ignored
-
-test result: ok. 1 passed; 0 failed; 1 ignored; 0 measured
-
-# Arguments after the `--` are passed to the produced executable
-target/release/rustic -O examples/fib.rs --run --test -- --bench
-
-running 2 tests
-test test::fib ... ignored
-test test::fib_10 ... bench:       463 ns/iter (+/- 10)
-
-test result: ok. 0 passed; 0 failed; 1 ignored; 1 measured
-
-# How does it work you ask? See for yourself!
-RUST_LOG=rustic=info target/release/rustic -O examples/fib.rs --run --test -- --bench
-INFO:rustic: cwd: /tmp/rs-19128-0-rust | cmd: `rustc '-O' '/home/japaric/Projects/rustic/examples/fib.rs' '--test'`
-INFO:rustic: cwd: . | cmd: `/tmp/rs-19128-0-rust/fib '--bench'`
-
-running 2 tests
-test test::fib ... ignored
-test test::fib_10 ... bench:       464 ns/iter (+/- 12)
-
-test result: ok. 0 passed; 0 failed; 1 ignored; 1 measured
-
-# If the `--run` flag is absent, `rustic` behaves just like `rustc`
-target/release/rustic examples/hello.rs && ./hello && rm hello
-Hello world!
+$ ./script.rs
+This is a rust script!
 ```
+
+All the arguments minus the first one will be passed to the resulting binary.
+
+```
+$ cat args.rs
+#!/usr/bin/rustic
+
+use std::env;
+
+fn main() {
+    println!("{:?}", env::args_os().skip(1).collect::<Vec<_>>());
+}
+
+$ rustic args.rs a b c
+["a", "b", "c"]
+
+$ ./args.rs a b c
+["a", "b", "c"]
+```
+
+Because `rustic` is `cargo` powered you can access the whole cargo ecosystem by
+embedding a `Cargo.toml` in the comments of your source file.
+
+```
+$ cat rand.rs
+// Cargo.toml
+//
+// [dependencies]
+// rand = "*"
+
+extern crate rand;
+
+use rand::Rng;
+
+fn main() {
+    println!("{}", rand::thread_rng().next_u32());
+}
+
+$ time rustic rand.rs
+rustic rand.rs  5.79s user 0.22s system 89% cpu 6.729 total
+3649997390
+```
+
+Each `rustic` script is backed by a `cargo` project, so the first run is always
+slow, but subsequent executions have minimal start up time.
+
+```
+$ time rustic rand.rs
+rustic rand.rs  0.00s user 0.00s system 73% cpu 0.005 total
+3089271122
+```
+
+## Installation and dependencies
+
+`rustic` depends on `cargo`, which depends on `rustc`, so you need to have both
+installed. You can install both using [rustup.sh] or [multirust].
+
+[rustup.sh]: https://github.com/rust-lang/rust/blob/master/src/etc/rustup.sh
+[multirust]: https://github.com/brson/multirust
+
+There is no `cargo install` (yet), so for now you'll have to manually build the
+project and install it.
+
+```
+$ git clone --depth 1 https://github.com/japaric/rustic
+$ cd rustic
+$ cargo build --release
+$ sudo cp target/release/rustic /usr/bin
+```
+
+## How it works?
+
+- For each source file, `rustic` keeps a *binary* `cargo` project in your cache
+  directory (`$HOME/.cache/rustic`). `rustic` derives the name of the cargo
+  project from the name of the source file (e.g. `rand.rs` -> `rand`) and uses
+  the source file as the project's `main.rs` file. Note that two source files
+  with the same name but located in different parts of your filesystem will be
+  mapped to the same `cargo` project.
+
+- The project's `Cargo.toml` will be the original one created by `cargo new`
+  plus the one found in the comments of the source file. `rustic` expects the
+  source's `Cargo.toml` to be in a *single* comment block that starts with
+  `// Cargo.toml`, the location of the comment block is not important.
+
+- `rustic` rebuilds the `cargo` project only when the source file has been
+  "modified". On each build, `rustic` updates a `time.stamp` file that contains
+  the last modification date of the source file. A project has been "modified"
+  when its modification date is greater that the one in the `time.stamp`.
+
+You can get a better grasp of the inner workings by looking at the debug logs.
+
+```
+$ export RUST_LOG=rustic
+$ rustic rand.rs
+DEBUG:rustic::cargo: Project::new("rand.rs")
+DEBUG:rustic::cargo: Project::new: using absolute path: "/home/japaric/Projects/rustic/examples/rand.rs"
+DEBUG:rustic::cargo: Project::new: using "rand" as project name
+DEBUG:rustic::cargo: Project::new: project "rand" already exists
+DEBUG:rustic::cargo: Project::new: removing old `src/main.rs` file
+DEBUG:rustic::cargo: Project::new: OK
+DEBUG:rustic::cargo: Project::new: updating `src/main.rs` symlink
+DEBUG:rustic::cargo: Project::new: OK
+DEBUG:rustic::cargo: Project::modified: opening `src/main.rs`
+DEBUG:rustic::cargo: Project::modified: OK
+DEBUG:rustic::cargo: Project::modified: `src/main.rs` was last modified on 1428483392438
+DEBUG:rustic::cargo: Project::timestamp: reading `time.stamp`
+DEBUG:rustic::cargo: Project::timestamp: OK
+DEBUG:rustic::cargo: Project::timestamp: got 1428483392438
+DEBUG:rustic::cargo: Project::modified: NO, last modified on 1428483392438, timestamp was 1428483392438
+DEBUG:rustic::cargo: Project::run: `"/home/japaric/.cache/rustic/rand/target/release/rand"`
+2495710899
+```
+
+## Problems? Ideas?
+
+Found a bug? Got a cool feature in mind? Documentation is lacking? Please open
+an issue to let me know.
 
 ## License
 
@@ -63,5 +155,4 @@ rustic is dual licensed under the Apache 2.0 license and the MIT license.
 
 See LICENSE-APACHE and LICENSE-MIT for more details.
 
-[issue]: https://github.com/rust-lang/rust/issues/9826
 [travis]: https://travis-ci.org/japaric/rustic.svg?branch=master
