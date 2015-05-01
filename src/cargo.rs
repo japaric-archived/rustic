@@ -4,6 +4,7 @@ use std::env;
 use std::ffi::OsString;
 use std::fs::{File, PathExt, self};
 use std::io::{BufReader, Read, Write, self};
+use std::os::unix;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output, Stdio};
 
@@ -59,7 +60,7 @@ impl Project {
                 _debug!("OK",);
 
                 _debug!("updating `src/main.rs` symlink",);
-                try!(fs::soft_link(&source, path.join("src/main.rs")));
+                try!(unix::fs::symlink(&source, path.join("src/main.rs")));
                 _debug!("OK",);
 
                 Ok(())
