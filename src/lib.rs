@@ -4,7 +4,7 @@
 #![deny(warnings)]
 
 #![feature(core)]
-#![feature(fs_time)]
+#![feature(metadata_ext)]
 #![feature(path_ext)]
 
 #[macro_use]

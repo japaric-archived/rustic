@@ -4,6 +4,7 @@ use std::env;
 use std::ffi::OsString;
 use std::fs::{File, PathExt, self};
 use std::io::{BufReader, Read, Write, self};
+use std::os::unix::fs::MetadataExt;
 use std::os::unix;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output, Stdio};
@@ -164,7 +165,7 @@ impl Project {
     }
 
     /// Returns the current modified time
-    pub fn modified(&self) -> io::Result<u64> {
+    pub fn modified(&self) -> io::Result<i64> {
         // Prefixed debug message
         macro_rules! _debug {
             ($template:expr, $($args:expr),*) => {
@@ -174,7 +175,7 @@ impl Project {
 
         _debug!("opening `src/main.rs`",);
         let main = self.path().join("src/main.rs");
-        let modified = try!(try!(File::open(main)).metadata()).modified();
+        let modified = try!(try!(File::open(main)).metadata()).as_raw().mtime();
         _debug!("OK",);
 
         _debug!("`src/main.rs` was last modified on {}", modified);
@@ -287,7 +288,7 @@ impl Project {
     }
 
     /// Reads `time.stamp` and returns its value
-    pub fn timestamp(&self) -> Result<Option<u64>, Error> {
+    pub fn timestamp(&self) -> Result<Option<i64>, Error> {
         // Prefixed debug message
         macro_rules! _debug {
             ($template:expr, $($args:expr),*) => {
