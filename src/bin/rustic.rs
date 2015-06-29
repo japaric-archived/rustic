@@ -3,15 +3,16 @@
 extern crate rustic;
 
 use std::env;
+use std::process::exit;
 
 fn main() {
     match rustic::run() {
         Err(e) => {
             println!("{}", e);
-            env::set_exit_status(1);
+            exit(1);
         },
         Ok(Some(code)) => {
-            env::set_exit_status(code)
+            exit(code)
         },
         _ => {},
     }
