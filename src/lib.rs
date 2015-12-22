@@ -3,14 +3,6 @@
 #![deny(missing_docs)]
 #![deny(warnings)]
 
-#![feature(core)]
-#![feature(metadata_ext)]
-#![feature(path_ext)]
-
-#[macro_use]
-#[no_link]
-extern crate debug_unreachable;
-
 #[macro_use] extern crate log;
 
 extern crate env_logger;
