@@ -4,7 +4,6 @@ name = "rustic"
 version = "0.0.0"
 
 [dependencies]
-debug_unreachable = "*"
 env_logger = "*"
 log = "*"
 
