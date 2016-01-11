@@ -2,7 +2,7 @@
 
 use std::env;
 use std::ffi::OsString;
-use std::fs::{File, PathExt, self};
+use std::fs::{File, self};
 use std::io::{BufReader, Read, Write, self};
 use std::os::unix::fs::MetadataExt;
 use std::os::unix;
@@ -44,9 +44,7 @@ impl Project {
         }
 
         // TODO "escape" `file_stem` to improve its chances to be a valid project name
-        let name = source.file_stem().unwrap_or_else(|| unsafe {
-            debug_unreachable!();
-        });
+        let name = source.file_stem().unwrap();
 
         _debug!("using {:?} as project name", name);
         let project = Project {
@@ -175,7 +173,7 @@ impl Project {
 
         _debug!("opening `src/main.rs`",);
         let main = self.path().join("src/main.rs");
-        let modified = try!(try!(File::open(main)).metadata()).as_raw().mtime();
+        let modified = try!(try!(File::open(main)).metadata()).mtime();
         _debug!("OK",);
 
         _debug!("`src/main.rs` was last modified on {}", modified);
@@ -207,10 +205,7 @@ impl Project {
 
     /// Executes the binary
     pub fn run<I>(&self, args: I) -> io::Result<Output> where I: Iterator<Item=OsString> {
-        let name = self.path().file_stem().unwrap_or_else(|| unsafe {
-            debug_unreachable!()
-        });
-
+        let name = self.path().file_stem().unwrap();
         let executable = self.path().join("target/release").join(name);
 
         let mut cmd = Command::new(executable);

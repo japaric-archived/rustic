@@ -1,8 +1,5 @@
-#![feature(exit_status)]
-
 extern crate rustic;
 
-use std::env;
 use std::process::exit;
 
 fn main() {
@@ -10,10 +7,12 @@ fn main() {
         Err(e) => {
             println!("{}", e);
             exit(1);
-        },
-        Ok(Some(code)) => {
-            exit(code)
-        },
-        _ => {},
+        }
+        Ok(Some(status)) => {
+            exit(status);
+        }
+        Ok(None) => {
+            exit(0);
+        }
     }
 }
