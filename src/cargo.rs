@@ -1,7 +1,6 @@
 //! Cargo
 
 use std::env;
-use std::ffi::OsString;
 use std::fs::{File, self};
 use std::io::{BufReader, Read, Write, self};
 use std::os::unix::fs::MetadataExt;
@@ -10,12 +9,14 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Output, Stdio};
 
 use lines::Lines;
+use sha1::Sha1;
 
 use Error;
 
 /// A cargo project
 pub struct Project {
-    path: PathBuf,
+    name: String,
+    path: PathBuf
 }
 
 impl Project {
@@ -23,7 +24,7 @@ impl Project {
     ///
     /// - The name of the cargo project will be derived from the input `source` file
     /// - The project will be located in the user cache directory
-    pub fn new(mut source: PathBuf) -> Result<Project, Error> {
+    pub fn new(source: PathBuf) -> Result<Project, Error> {
         // Prefixed debug message
         macro_rules! _debug {
             ($template:expr, $($args:expr),*) => {
@@ -33,26 +34,39 @@ impl Project {
 
         debug!("Project::new({:?})", source);
 
-        if source.is_relative() {
-            source = try!(env::current_dir()).join(source);
-            _debug!("using absolute path: {:?}", source);
-        }
+        let source = try!(source.canonicalize());
+        debug!("Project::new: canonical path: {:?}", source);
 
         if !source.is_file() {
             _debug!("{:?} is not a file", source);
             return Err(Error::NotAFile(source))
         }
 
-        // TODO "escape" `file_stem` to improve its chances to be a valid project name
-        let name = source.file_stem().unwrap();
+        let mut path_digest = Sha1::new();
+        path_digest.update(
+            source.parent()
+            .map(|p| p.to_str().unwrap())
+            .unwrap_or("./")
+            .as_bytes()
+        );
+        let path_digest = path_digest.hexdigest()[0..16].to_string();
 
-        _debug!("using {:?} as project name", name);
+        // TODO "escape" `file_stem` to improve its chances to be a valid project name
+        let name = source.file_stem().unwrap().to_str().unwrap();
+        _debug!("using {:?} as project name", &name);
+
+        let entry_name = format!("{}-{}", path_digest, &name);
+        _debug!("using {:?} as cache entry name", &entry_name);
+
         let project = Project {
-            path: try!(cache_dir()).join(name),
+            path: try!(cache_dir()).join(entry_name),
+            name: name.to_string()
         };
 
         {
             let path = project.path();
+            let name = project.name();
+
             let replace_main = || -> Result<(), Error> {
                 _debug!("removing old `src/main.rs` file",);
                 try!(fs::remove_file(path.join("src/main.rs")));
@@ -69,7 +83,7 @@ impl Project {
                 _debug!("project {:?} doesn't exist, creating a new one in {:?}", name, path);
                 let output = try! {
                     Command::new("cargo")
-                        .args(&["new", "--bin"])
+                        .args(&["new", "--bin", "--name", name])
                         .arg(&path)
                         .output()
                 };
@@ -204,8 +218,8 @@ impl Project {
     }
 
     /// Executes the binary
-    pub fn run<I>(&self, args: I) -> io::Result<Output> where I: Iterator<Item=OsString> {
-        let name = self.path().file_stem().unwrap();
+    pub fn run(&self, args: Vec<&str>) -> io::Result<Output> {
+        let name = self.name();
         let executable = self.path().join("target/release").join(name);
 
         let mut cmd = Command::new(executable);
@@ -317,6 +331,10 @@ impl Project {
 
     fn path(&self) -> &Path {
         &self.path
+    }
+
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
