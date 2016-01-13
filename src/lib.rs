@@ -90,7 +90,7 @@ fn init_logger() -> Result<(), Error> {
 pub fn run() -> Result<Option<i32>, Error> {
     try!(init_logger());
 
-    let clap_result = App::new("rustc")
+    let clap_result = App::new("rustic")
         .version(&crate_version!()[..])
         .author("Jorge Aparicio <japaricious@gmail.com>")
         .about("Cargo wrapper that lets you run Rust source files like scripts")
