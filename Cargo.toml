@@ -4,8 +4,10 @@ name = "rustic"
 version = "0.0.0"
 
 [dependencies]
-env_logger = "*"
-log = "*"
+env_logger = "~ 0.3"
+log = "~ 0.3"
+clap = "~ 1.5"
+sha1 = "0.1.1"
 
 [dependencies.lines]
 git = "https://github.com/japaric/lines.rs"

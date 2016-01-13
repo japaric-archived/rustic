@@ -4,17 +4,18 @@
 #![deny(warnings)]
 
 #[macro_use] extern crate log;
+#[macro_use] extern crate clap;
+#[macro_use] extern crate sha1;
 
 extern crate env_logger;
 extern crate lines;
 
-use std::env;
-use std::ffi::OsStr;
 use std::path::PathBuf;
 use std::process::Command;
 use std::{fmt, io};
 
 use cargo::Project;
+use clap::{Arg, App, ClapErrorType};
 
 pub mod cargo;
 
@@ -31,8 +32,8 @@ pub enum Error {
     Log(log::SetLoggerError),
     /// `time.stamp` is malformed
     MalformedTimestamp(String),
-    /// No arguments passed
-    NoArgs,
+    /// Wrong arguments passed
+    WrongArgs(clap::ClapError),
     /// Can't find cache directory
     NoCacheDir,
     /// First argument is not a file
@@ -55,7 +56,7 @@ impl fmt::Display for Error {
             Io(ref e) => e.fmt(f),
             Log(ref e) => e.fmt(f),
             MalformedTimestamp(ref s) => write!(f, "malformed timestamp: {}", s),
-            NoArgs => f.write_str("Expected path to source file as first argument"),
+            WrongArgs(ref e) => e.fmt(f),
             NoCacheDir => f.write_str("Couldn't find cache directory (is $HOME not set?)"),
             NotAFile(ref path) => write!(f, "{:?} is not a file", path),
         }
@@ -74,15 +75,9 @@ impl From<log::SetLoggerError> for Error {
     }
 }
 
-fn help() {
-    println! {"\
-Usage: rustic FILE [ARG]...
-Usage: rustic OPTION
-
-Options:
-  -h, --help        display this help and exit
-  -V, --version     output version information and exit
-"
+impl From<clap::ClapError> for Error {
+    fn from(e: clap::ClapError) -> Error {
+        Error::WrongArgs(e)
     }
 }
 
@@ -95,31 +90,46 @@ fn init_logger() -> Result<(), Error> {
 pub fn run() -> Result<Option<i32>, Error> {
     try!(init_logger());
 
-    let mut args = env::args_os().skip(1);
+    let clap_result = App::new("rustc")
+        .version(&crate_version!()[..])
+        .author("Jorge Aparicio <japaricious@gmail.com>")
+        .about("Cargo wrapper that lets you run Rust source files like scripts")
+        .arg(Arg::with_name("FILE")
+            .index(1)
+            .help("Rust source file to compile and run")
+            .required(true)
+        )
+        .arg(Arg::with_name("ARGS")
+            .index(2)
+            .multiple(true)
+            .help("Arguments for the compiled program")
+            .required(false)
+        )
+        .get_matches_safe();
 
-    let arg = try!(args.next().ok_or(Error::NoArgs));
+    match clap_result {
+        Err(err) => match err.error_type {
+            ClapErrorType::VersionDisplayed => {
+                try!(try!(Command::new("rustc").arg("-V").spawn()).wait());
+                try!(try!(Command::new("cargo").arg("-V").spawn()).wait());
+                Ok(None)
+            },
+            ClapErrorType::HelpDisplayed => Ok(None),
+            _ => Err(err.into())
+        },
+        Ok(matches) => {
+            let project = try!(Project::new(PathBuf::from(matches.value_of("FILE").unwrap())));
 
-    if arg.as_os_str() == OsStr::new("--version") || arg.as_os_str() == OsStr::new("-V") {
-        try!(try!(Command::new("rustc").arg("-V").spawn()).wait());
-        try!(try!(Command::new("cargo").arg("-V").spawn()).wait());
+            if try!(project.has_changed()) {
+                try!(project.update_cargo_toml());
+                try!(project.remove_lock());
+                try!(project.build());
+                try!(project.update_timestamp());
+            }
 
-        return Ok(None)
-    } else if arg.as_os_str() == OsStr::new("-h") || arg.as_os_str() == OsStr::new("--help") {
-        help();
+            let output = try!(project.run(matches.values_of("ARGS").unwrap_or(vec![])));
 
-        return Ok(None)
+            Ok(output.status.code())
+        }
     }
-
-    let project = try!(Project::new(PathBuf::from(arg)));
-
-    if try!(project.has_changed()) {
-        try!(project.update_cargo_toml());
-        try!(project.remove_lock());
-        try!(project.build());
-        try!(project.update_timestamp());
-    }
-
-    let output = try!(project.run(args));
-
-    Ok(output.status.code())
 }
