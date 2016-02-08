@@ -1,6 +1,5 @@
 // Cargo.toml
 //
-// [dependencies]
 // rand = "*"
 
 extern crate rand;
