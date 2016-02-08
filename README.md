@@ -1,3 +1,16 @@
+# Status
+
+This project is currently **UNMAINTAINED**. If you would like to become a maintainer, open a Github
+issue.
+
+I'm no longer using this. Since `cargo install` is now a thing, I prefer to create a single project
+with all my scripts and just `cargo install` it, instead of having a bunch of `rustic` scripts
+scattered all over the place. That way I can do some code reuse between all the scripts without
+having to create yet another crate.
+
+-- @japaric, 2016/02/08
+
+---
 [![Build Status][travis]](https://travis-ci.org/japaric/rustic)
 
 # `rustic`
