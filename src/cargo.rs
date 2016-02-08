@@ -2,13 +2,12 @@
 
 use std::env;
 use std::fs::{File, self};
-use std::io::{BufReader, Read, Write, self};
+use std::io::{Read, Write, self};
 use std::os::unix::fs::MetadataExt;
 use std::os::unix;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output, Stdio};
 
-use lines::Lines;
 use sha1::Sha1;
 
 use Error;
@@ -251,13 +250,12 @@ impl Project {
         _debug!("OK",);
 
         _debug!("reading `src/main.rs` comments",);
-        let f = try!(File::open(self.path.join("src/main.rs")));
-        let mut lines = Lines::from(BufReader::new(f));
+        let ref mut f = try!(File::open(self.path.join("src/main.rs")));
+        let ref mut text = String::new();
+        try!(f.read_to_string(text));
 
         let mut start = false;
-        while let Some(line) = lines.next() {
-            let line = try!(line);
-
+        for line in text.lines() {
             if start {
                 if line.starts_with("//") {
                     string.push_str(line["//".len()..].trim());

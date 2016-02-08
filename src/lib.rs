@@ -8,7 +8,6 @@
 #[macro_use] extern crate sha1;
 
 extern crate env_logger;
-extern crate lines;
 
 use std::path::PathBuf;
 use std::process::Command;
